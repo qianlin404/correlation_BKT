@@ -58,6 +58,9 @@ def train(train_filename: str,
           seed=404
           ):
     """ Train and evaluate BKT model """
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
     train_logger = make_loger("Training", output_dir)
 
     train_logger.info("Parsing training data %s" % train_filename)
