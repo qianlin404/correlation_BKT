@@ -1,6 +1,6 @@
 # Correlation BKT Model
 
-This project implement a standard Bayesian Knowledge Tracing model with correlation matrix using tensorflow. Compare to standard BKT model, this model update $p(L_t)^k_u$ for all $u$ for student $k$ on every observation using a correlation matrix.
+This project implement a standard Bayesian Knowledge Tracing model with correlation matrix using tensorflow. Compare to standard BKT model, this model update all learned parameters for that student on every observation using a correlation matrix.
 
 ## How to use
 
@@ -17,7 +17,7 @@ After preparing you data, you can now train and evaluate the model. Run
 
 ```python train.py -h ```
 
-to check program usage and parameter definition. After training, all parameters and predictions are stored in the output directory you specify. `slip_param.tsv` is $p(s)^k$ for each skill. `guess_param.tsv` is $p(g)^k$ for each skill. `transit_param.tsv` is $p(t)^k$ for each skill. `corr.tsv` is the correlation matrix if you choose to train the model using correlation mode. `predictions.tsv` contains the predictions for testing data. 
+to check program usage and parameter definition. After training, all parameters and predictions are stored in the output directory you specify. `slip_param.tsv` is slip probability for each skill. `guess_param.tsv` is guess probability for each skill. `transit_param.tsv` is transit probability for each skill. `corr.tsv` is the correlation matrix if you choose to train the model using correlation mode. `predictions.tsv` contains the predictions for testing data. 
 
 Moreover, this program also store trainning details using tensorboard. There data are stored in `tensorboard/` folder.
 
