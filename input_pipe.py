@@ -280,7 +280,7 @@ def read_corr_matrix(filename: str, sep: str) -> np.ndarray:
     :param filename:
     :return corr:
     """
-    corr = pd.read_csv(filename, sep=sep, header=None)
+    corr = pd.read_csv(filename, sep=sep, header=None).values
     return corr
 
 

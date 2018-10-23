@@ -129,7 +129,7 @@ class Corr_KTRNNCell(tf.nn.rnn_cell.RNNCell):
                  slip_initializer: Callable,
                  guess_max: tf.Tensor,
                  slip_max: tf.Tensor,
-                 corr_matrix: tf.Tensor = None,
+                 corr_matrix: np.ndarray = None,
                  reuse=tf.AUTO_REUSE,
                  name=None,
                  dtype=tf.float32):
@@ -151,7 +151,7 @@ class Corr_KTRNNCell(tf.nn.rnn_cell.RNNCell):
         self._guess_max = guess_max
         self._slip_max = slip_max
 
-        if corr_matrix:
+        if corr_matrix is not None:
             self._corr_matrix = corr_matrix
         else:
             corr_matrix = np.ones(shape=(skill_nb, skill_nb)) * .1

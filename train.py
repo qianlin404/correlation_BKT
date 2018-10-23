@@ -196,7 +196,7 @@ if __name__ == "__main__":
                         help="batch size for training, default to 30")
     parser.add_argument("--num_epoch", metavar='', type=int, default=10,
                         help="number of epoch to train, default to 10")
-    parser.add_argument("--corr_matrix_filename", metavar='', type=str, nargs=1,
+    parser.add_argument("--corr_matrix_filename", metavar='', type=str,
                         help="correlation matrix file name")
 
     args = parser.parse_args()
