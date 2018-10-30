@@ -108,7 +108,9 @@ def print_board(student_nb: int,
                 train_skill_nb: int,
                 correct_cnt: int,
                 total_cnt: int,
-                accuracy: float):
+                accuracy: float,
+                rmse:float,
+                auc: float):
     """ Helper function to print result """
 
     result_format = "{:<25}{:<51}#"
@@ -118,7 +120,9 @@ def print_board(student_nb: int,
     train_skill_nb_line = result_format.format("#  Train Skill #:", train_skill_nb)
     correct_cnt_line = result_format.format("#  Correct #:", correct_cnt)
     total_cnt_line = result_format.format("#  Totoal #:", total_cnt)
-    accuracy_line = result_format.format("#  Accuracy #:", accuracy)
+    accuracy_line = result_format.format("#  Accuracy :", accuracy)
+    rmse_line = result_format.format("#  RMSE :", rmse)
+    auc_line = result_format.format("#  AUC :", auc)
 
     print(board)
     print(title)
@@ -127,6 +131,8 @@ def print_board(student_nb: int,
     print(correct_cnt_line)
     print(total_cnt_line)
     print(accuracy_line)
+    print(rmse_line)
+    print(auc_line)
     print(board)
 
 

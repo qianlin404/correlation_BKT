@@ -332,9 +332,15 @@ class StandardBKTModel:
                                                    dtype=tf.float32, sequence_length=sequence_length)
         return output
 
-    def _losses(self, labels, predictions):
+    def _losses(self, labels, predictions, seq_length):
         # Log loss
-        return tf.losses.log_loss(labels=labels, predictions=predictions)
+        seq_length_local = tf.cast(seq_length, dtype=tf.float32)
+        labels_local = tf.cast(labels, dtype=tf.float32)
+        pred_local = tf.cast(predictions, dtype=tf.float32)
+        total_cnt = tf.reduce_sum(seq_length_local)
+
+        losses = tf.losses.log_loss(labels=labels_local, predictions=pred_local, reduction=tf.losses.Reduction.NONE)
+        return tf.reduce_sum(losses)/total_cnt
 
     def train(self, inputs, labels, iter_num, global_step=None, **kwargs):
 
@@ -342,14 +348,19 @@ class StandardBKTModel:
             train_X = inputs[:3]
             train_seq_length = inputs[3]
             predictions = self._predict_prob(train_X, train_seq_length)
-            loss = self._losses(labels, predictions)
+            loss = self._losses(labels, predictions, train_seq_length)
 
             optimizer = tf.train.AdamOptimizer(**kwargs)
             train_op = optimizer.minimize(loss, global_step=global_step)
             correct_cnt_op, total_cnt_op = get_correct_and_total(labels, predictions, train_seq_length)
 
+            rmse = get_metrics(labels, predictions, train_seq_length, tf.metrics.root_mean_squared_error)
+            auc = get_metrics(labels, predictions, train_seq_length, tf.metrics.auc)
+
         tf.summary.scalar("losses", loss)
-        tf.summary.scalar("train_acc", correct_cnt_op/total_cnt_op)
+        tf.summary.scalar("metrics/train_acc", correct_cnt_op/total_cnt_op)
+        tf.summary.scalar("metrics/rmse", rmse)
+        tf.summary.scalar("metrics/auc", auc)
         tf.summary.histogram("pg", self._max_guess * tf.sigmoid(self._cell._guess_weights))
         tf.summary.histogram("pt", tf.sigmoid(self._cell._transit_weights))
         tf.summary.histogram("ps", self._max_slip * tf.sigmoid(self._cell._slip_weights))
@@ -445,6 +456,7 @@ def get_correct_and_total(labels: tf.Tensor,
 
     return correct_cnt, total_cnt
 
+
 def get_accuracy(labels, predictions, seq_length):
     """
     Compute predict accuracy
@@ -465,3 +477,75 @@ def get_accuracy(labels, predictions, seq_length):
     acc = correct/total
 
     return acc, correct, total
+
+
+def flatten_with_seq_length(tensor, seq_length):
+    """
+    Flatten the tensor by taking seq_length[i] elements for ith row
+    :param tensor: tensor in shape [batch_size, max_seq_length]
+    :param seq_length: the valid length for each row
+    :return: tensor in shape [sum(seq_length), ]
+    """
+    N = tf.shape(tensor)[0]
+    tensor_2d = tf.reshape(tensor, shape=(N, -1))
+    seq_length_local = tf.cast(seq_length, tf.int32)
+    index = tf.constant(0, dtype=tf.int32)
+
+    cond = lambda i, p: tf.less(i, N)
+    body = lambda i, p: (i + 1, tf.concat([p, tensor_2d[i][:seq_length_local[i]]], axis=0))
+    var = (index, tf.zeros(shape=(0,), dtype=tensor_2d.dtype))
+
+    res = tf.while_loop(cond, body, var, shape_invariants=(index.get_shape(), tf.TensorShape([None])))
+    return res[1]
+
+
+def get_metrics(labels, predictions, seq_length, metircs_fn):
+    """
+    Return ops to compute rmse
+    :param labels: Ground true labels
+    :param predictions: Prediction probabilities
+    :param seq_length: valid sequence length
+    :param metircs_fn: tf.metrics function
+    :return: ops
+    """
+    labels_flat = flatten_with_seq_length(labels, seq_length)
+    predictions_flat = flatten_with_seq_length(predictions, seq_length)
+
+    return metircs_fn(labels_flat, predictions_flat)[1]
+
+
+def flatten_with_seq_length_num(arr: np.ndarray,
+                                seq_length: np.ndarray):
+    """
+    Flatten ndarray
+    :param arr: ndarray
+    :param seq_length: valid length
+    :return: ndarray in shape [sum(seq_length)]
+    """
+    N = arr.shape[0]
+    arr_2d = arr.reshape((N, -1))
+    seq_length_local = seq_length.astype(np.int32)
+    index = 0
+
+    res = np.empty(shape=(np.sum(seq_length_local)))
+    for i in range(N):
+        res[index:index+seq_length_local[i]] = arr_2d[i][:seq_length_local[i]]
+        index += seq_length_local[i]
+
+    assert index == np.sum(seq_length_local), "index does not reach the end"
+    return res
+
+
+def get_metrics_num(labels, predictions, seq_length, metrics_fn):
+    """
+    Compute metrics from numpy arrays
+    :param labels: ndarray
+    :param predictions: ndarray
+    :param seq_length: ndarray
+    :param metrics_fn: sklearn.metrics
+    :return:
+    """
+    labels_flat = flatten_with_seq_length_num(labels, seq_length)
+    predictions_flat = flatten_with_seq_length_num(predictions, seq_length)
+
+    return metrics_fn(labels_flat, predictions_flat)

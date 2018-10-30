@@ -15,6 +15,8 @@ import input_pipe
 import models
 import model_output
 
+from sklearn.metrics import roc_auc_score, mean_squared_error
+
 def make_loger(logger_name: str,
                output_dir: str):
     log_format = logging.Formatter("%(asctime)s %(name)s %(levelname)s %(message)s")
@@ -137,7 +139,13 @@ def train(train_filename: str,
     acc, correct, total = models.get_accuracy(parse_test["input_data"][:, :, [1]], predictions,
                                               parse_test["seq_length"])
 
-    model_output.print_board(test_meta["student_nb"], train_meta["skill_nb"], correct, total, np.round(acc, 4))
+    rmse = np.sqrt(models.get_metrics_num(parse_test["input_data"][:, :, [1]],
+                                          predictions, parse_test["seq_length"], mean_squared_error))
+    auc = models.get_metrics_num(parse_test["input_data"][:, :, [1]], predictions,
+                                 parse_test["seq_length"], roc_auc_score)
+
+    model_output.print_board(test_meta["student_nb"], train_meta["skill_nb"], correct, total, np.round(acc, 4),
+                             rmse, auc)
 
     train_logger.info("Writing result to %s..." % output_dir)
 
